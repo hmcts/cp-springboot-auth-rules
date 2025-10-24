@@ -7,13 +7,15 @@ import uk.gov.moj.cpp.authz.http.AuthzPrincipal;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 class RequestUserAndGroupProviderTest {
 
+    UUID userId = UUID.randomUUID();
+
     @Test
     void returnsTrueWhenPrincipalHasAnyOfTheGroups() {
-        final AuthzPrincipal principal = new AuthzPrincipal(
-                "u1", "fn", "ln", "u1@example.test", Set.of("Legal Advisers", "Other"));
+        final AuthzPrincipal principal = new AuthzPrincipal(userId, "fn", "ln", "u1@example.test", Set.of("Legal Advisers", "Other"));
         final RequestUserAndGroupProvider provider = new RequestUserAndGroupProvider(principal);
         final Action action = new Action("GET /api/hello", Map.of());
 
@@ -26,7 +28,7 @@ class RequestUserAndGroupProviderTest {
     @Test
     void returnsFalseWhenPrincipalLacksGroups() {
         final AuthzPrincipal principal = new AuthzPrincipal(
-                "u2", "fn", "ln", "u2@example.test", Set.of("Guests"));
+                userId, "fn", "ln", "u2@example.test", Set.of("Guests"));
         final RequestUserAndGroupProvider provider = new RequestUserAndGroupProvider(principal);
         final Action action = new Action("GET /api/hello", Map.of());
 

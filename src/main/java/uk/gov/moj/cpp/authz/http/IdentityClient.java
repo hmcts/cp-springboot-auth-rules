@@ -14,10 +14,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Duration;
+import java.util.UUID;
 
 @Slf4j
 public final class IdentityClient {
-    private final static String USERID_REGEX = "^[\\-a-zA-Z0-9]*$";
     private final HttpAuthzProperties properties;
     private final RestTemplate restTemplate;
 
@@ -29,19 +29,20 @@ public final class IdentityClient {
         this.restTemplate = new RestTemplate(factory);
     }
 
-    public IdentityResponse fetchIdentity(final String userId) {
-        sanitizeUserId(userId);
-        final String identityUrl = properties.getIdentityUrlTemplate();
-        final String url = identityUrl.contains("{userId}") ? identityUrl.replace("{userId}", userId) : identityUrl;
+    public IdentityResponse fetchIdentity(final UUID userId) {
+        final String urlPath = properties.getIdentityUrlPath().replace("{userId}", userId.toString());
+        final URI url = constructUrl(properties.getIdentityUrlRoot(), urlPath);
+
         final HttpHeaders headers = new HttpHeaders();
         final IdentityResponse identityResponse;
         headers.add("Accept", properties.getAcceptHeader());
-        headers.add(properties.getUserIdHeader(), userId);
-        final RequestEntity<Void> request = RequestEntity.get(sanitizeUrl(url)).headers(headers).build();
+        headers.add(properties.getUserIdHeader(), userId.toString());
+
+        final RequestEntity<Void> request = RequestEntity.get(url).headers(headers).build();
         final ResponseEntity<LoggedInUserPermissionsResponse> response = restTemplate.exchange(request, LoggedInUserPermissionsResponse.class);
         final LoggedInUserPermissionsResponse body = response.getBody();
         if (body == null) {
-            log.warn("Empty identity response for userId:{}", sanitizeForLog(userId));
+            log.error("Empty identity response");
             identityResponse = new IdentityResponse(userId, java.util.List.of(), java.util.List.of());
         } else {
             identityResponse = new IdentityResponse(userId, body.groups(), body.permissions());
@@ -49,29 +50,19 @@ public final class IdentityClient {
         return identityResponse;
     }
 
-    public URI sanitizeUrl(String url) {
+    public URI constructUrl(final String root, final String path) {
         try {
-            return new URL(url).toURI();
+            final URL rootUrl = new URL(root);
+            final URI uri = new URL(rootUrl, path).toURI();
+            if (uri.getHost().equalsIgnoreCase(rootUrl.getHost())) {
+                return uri;
+            } else {
+                log.error("Invalid url constructed host does not match root host:{}", rootUrl.getHost());
+                throw new RuntimeException("Invalid url host does not match urlRoot");
+            }
         } catch (URISyntaxException | MalformedURLException e) {
-            log.error("Invalid url provided in properties");
+            log.error("Invalid url. {}", e.getMessage());
             throw new RuntimeException("Invalid url");
         }
-    }
-
-    public void sanitizeUserId(String userId) {
-        if (userId == null || userId.matches(USERID_REGEX)) {
-            return;
-        }
-        log.error("Illegal userId \"{}\" must match regex:{}", userId, USERID_REGEX);
-        throw new RuntimeException("Illegal userId");
-    }
-
-    public String sanitizeForLog(String input) {
-        if (input == null) {
-            return input;
-        }
-        return input
-                .replaceAll("[^a-zA-Z0-9\\\\-]", "?")
-                .replaceAll("[\\r\\n]", "?");
     }
 }

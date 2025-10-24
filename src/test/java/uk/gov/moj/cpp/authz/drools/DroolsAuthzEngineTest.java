@@ -10,6 +10,7 @@ import uk.gov.moj.cpp.authz.testsupport.TestConstants;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,6 +19,8 @@ class DroolsAuthzEngineTest {
 
 
     private static final String DROOLS_CLASSPATH_PATTERN = "classpath:/drool-test/**/*.drl";
+
+    private final UUID userId = UUID.randomUUID();
 
     @BeforeAll
     static void prepare() {
@@ -36,7 +39,7 @@ class DroolsAuthzEngineTest {
         final DroolsAuthzEngine engine = new DroolsAuthzEngine(properties);
 
         final AuthzPrincipal principal =
-                new AuthzPrincipal("u1", "fn", "ln", "u1@example.test", Set.of(TestConstants.GROUP_LA));
+                new AuthzPrincipal(userId, "fn", "ln", "u1@example.test", Set.of(TestConstants.GROUP_LA));
         final UserAndGroupProvider provider = (action, groups) -> {
             for (final String g : groups) {
                 if (principal.groups().stream().anyMatch(s -> s.equalsIgnoreCase(g))) {
@@ -46,7 +49,7 @@ class DroolsAuthzEngineTest {
             return false;
         };
         final Action action = new Action(TestConstants.ACTION_HELLO, Map.of());
-        assertTrue(engine.evaluate(provider, action),"Should have access");
+        assertTrue(engine.evaluate(provider, action), "Should have access");
     }
 
     @Test
@@ -60,7 +63,7 @@ class DroolsAuthzEngineTest {
 
         final UserAndGroupProvider provider = (action, groups) -> false;
         final Action action = new Action(TestConstants.ACTION_ECHO, Map.of());
-        assertFalse(engine.evaluate(provider, action),"Access Denied");
+        assertFalse(engine.evaluate(provider, action), "Access Denied");
     }
 
     @Test
@@ -73,7 +76,7 @@ class DroolsAuthzEngineTest {
         final DroolsAuthzEngine engine = new DroolsAuthzEngine(properties);
 
         final AuthzPrincipal principal =
-                new AuthzPrincipal("u2", "fn", "ln", "u2@example.test", Set.of(TestConstants.GROUP_LA));
+                new AuthzPrincipal(userId, "fn", "ln", "u2@example.test", Set.of(TestConstants.GROUP_LA));
         final UserAndGroupProvider provider = (action, groups) -> {
             for (final String g : groups) {
                 if (principal.groups().stream().anyMatch(s -> s.equalsIgnoreCase(g))) {
@@ -97,7 +100,7 @@ class DroolsAuthzEngineTest {
         final DroolsAuthzEngine engine = new DroolsAuthzEngine(properties);
 
         final AuthzPrincipal principal =
-                new AuthzPrincipal("u3", "fn", "ln", "u3@example.test", Set.of(TestConstants.GROUP_LA));
+                new AuthzPrincipal(userId, "fn", "ln", "u3@example.test", Set.of(TestConstants.GROUP_LA));
         final UserAndGroupProvider provider = (action, groups) -> {
             for (final String g : groups) {
                 if (principal.groups().stream().anyMatch(s -> s.equalsIgnoreCase(g))) {
@@ -110,5 +113,4 @@ class DroolsAuthzEngineTest {
         final Action action = new Action(TestConstants.ACTION_HEARING_GET_DRAFT_RESULT, Map.of());
         assertTrue(engine.evaluate(provider, action), "Expected allow for hearing.get-draft-result and LA group");
     }
-
 }
