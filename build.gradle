@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'pmd'
     id 'maven-publish'
-    id 'org.cyclonedx.bom' version '3.0.1'
+    id 'org.cyclonedx.bom' version '3.0.2'
 }
 
 group = 'uk.gov.hmcts.cp'
@@ -62,7 +62,7 @@ tasks.withType(Test).configureEach {
 }
 
 ext {
-    springBootVersion = "3.5.7"
+    springBootVersion = "4.0.0"
     lombokVersion = "1.18.42"
     jupiterVersion = "6.0.1"
     droolsVersion = "10.1.0"
